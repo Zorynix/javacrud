@@ -1,16 +1,15 @@
-FROM openjdk:21-jdk-slim
-
-WORKDIR /app
-
+FROM eclipse-temurin:21-jdk AS builder
+WORKDIR /opt/app
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
-
-COPY src src
-
 RUN chmod +x ./gradlew
+COPY src ./src
+RUN ./gradlew clean build -x test
 
-RUN ./gradlew build -x test
-
-CMD ["java", "-jar", "build/libs/crudjava-0.0.1-SNAPSHOT.jar"]
+FROM eclipse-temurin:21-jre
+WORKDIR /opt/app
+EXPOSE 8080
+COPY --from=builder /opt/app/build/libs/*.jar /opt/app/app.jar
+ENTRYPOINT ["java", "-jar", "/opt/app/app.jar"]

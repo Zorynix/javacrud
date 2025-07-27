@@ -1,5 +1,6 @@
 package crudjava.crudjava.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -42,13 +43,15 @@ public class Customer {
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "customer_type", nullable = false)
+    @Column(name = "customer_type", nullable = false, columnDefinition = "customer_type")
     private CustomerType customerType = CustomerType.REGULAR;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("customer-addresses")
     private List<Address> addresses;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("customer-orders")
     private List<Order> orders;
 
     @CreationTimestamp

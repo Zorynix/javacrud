@@ -1,5 +1,6 @@
 package crudjava.crudjava.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -36,11 +37,12 @@ public class Address {
     private String postalCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "address_type", nullable = false)
+    @Column(name = "address_type", nullable = false, columnDefinition = "address_type")
     private AddressType addressType = AddressType.BILLING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
+    @JsonBackReference("customer-addresses")
     private Customer customer;
 
     public Address() {}

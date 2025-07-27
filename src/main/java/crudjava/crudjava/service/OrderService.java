@@ -102,9 +102,10 @@ public class OrderService {
                 order.setDeliveredAt(LocalDateTime.now());
                 break;
             case CANCELLED:
+                final String orderNumber = order.getOrderNumber();
                 order.getOrderItems().forEach(item ->
                     inventoryService.releaseInventory(item.getProduct().getId(),
-                            item.getQuantity(), "Order cancelled: " + order.getOrderNumber()));
+                            item.getQuantity(), "Order cancelled: " + orderNumber));
                 break;
         }
 

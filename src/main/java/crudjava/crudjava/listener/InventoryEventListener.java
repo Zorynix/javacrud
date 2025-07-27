@@ -24,7 +24,7 @@ public class InventoryEventListener {
                 inventoryEvent.getOldQuantity(), inventoryEvent.getNewQuantity());
 
         try {
-            logger.audit("INVENTORY_CHANGE: Product={}, SKU={}, Operation={}, Old={}, New={}, Reason={}",
+            logger.info("INVENTORY_CHANGE: Product={}, SKU={}, Operation={}, Old={}, New={}, Reason={}",
                     inventoryEvent.getProductName(), inventoryEvent.getSku(),
                     inventoryEvent.getOperation(), inventoryEvent.getOldQuantity(),
                     inventoryEvent.getNewQuantity(), inventoryEvent.getReason());
