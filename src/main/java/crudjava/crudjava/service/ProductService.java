@@ -82,7 +82,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<Product> findByStatus(Product.ProductStatus status) {
+    public List<Product> findByStatus(String status) {
         return productRepository.findByStatus(status);
     }
 
@@ -108,7 +108,7 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + id));
 
         if (!product.getOrderItems().isEmpty()) {
-            product.setStatus(Product.ProductStatus.DISCONTINUED);
+            product.setStatus("DISCONTINUED");
             productRepository.save(product);
             logger.info("Marked product as discontinued: {}", id);
         } else {
@@ -118,7 +118,7 @@ public class ProductService {
     }
 
     @CacheEvict(value = "products", key = "#productId")
-    public Product updateProductStatus(Long productId, Product.ProductStatus status) {
+    public Product updateProductStatus(Long productId, String status) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productId));
 

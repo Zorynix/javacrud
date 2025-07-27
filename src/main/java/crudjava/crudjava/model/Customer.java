@@ -42,9 +42,8 @@ public class Customer {
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "customer_type", nullable = false, columnDefinition = "customer_type")
-    private CustomerType customerType = CustomerType.REGULAR;
+    @Column(name = "customer_type", nullable = false, length = 20)
+    private String customerType = "REGULAR";
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("customer-addresses")
@@ -67,7 +66,7 @@ public class Customer {
 
     public Customer() {}
 
-    public Customer(String firstName, String lastName, String email, String phone, CustomerType customerType) {
+    public Customer(String firstName, String lastName, String email, String phone, String customerType) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -90,8 +89,8 @@ public class Customer {
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public CustomerType getCustomerType() { return customerType; }
-    public void setCustomerType(CustomerType customerType) { this.customerType = customerType; }
+    public String getCustomerType() { return customerType; }
+    public void setCustomerType(String customerType) { this.customerType = customerType; }
 
     public List<Address> getAddresses() { return addresses; }
     public void setAddresses(List<Address> addresses) { this.addresses = addresses; }
@@ -107,8 +106,4 @@ public class Customer {
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
-
-    public enum CustomerType {
-        REGULAR, PREMIUM, VIP
-    }
 }

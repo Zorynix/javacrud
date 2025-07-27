@@ -1,5 +1,7 @@
 package crudjava.crudjava.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -55,11 +57,11 @@ public class Product {
     @Column(name = "weight_kg", precision = 8, scale = 3)
     private BigDecimal weightKg;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "product_status")
-    private ProductStatus status = ProductStatus.ACTIVE;
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ACTIVE";
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("product-orderitems")
     private List<OrderItem> orderItems;
 
     @CreationTimestamp
@@ -108,8 +110,8 @@ public class Product {
     public BigDecimal getWeightKg() { return weightKg; }
     public void setWeightKg(BigDecimal weightKg) { this.weightKg = weightKg; }
 
-    public ProductStatus getStatus() { return status; }
-    public void setStatus(ProductStatus status) { this.status = status; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
@@ -122,8 +124,4 @@ public class Product {
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
-
-    public enum ProductStatus {
-        ACTIVE, INACTIVE, DISCONTINUED
-    }
 }

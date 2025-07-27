@@ -17,7 +17,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Optional<Customer> findByEmail(String email);
 
-    List<Customer> findByCustomerType(Customer.CustomerType customerType);
+    List<Customer> findByCustomerType(String customerType);
 
     @Query("SELECT c FROM Customer c WHERE c.firstName ILIKE %:name% OR c.lastName ILIKE %:name%")
     Page<Customer> findByNameContainingIgnoreCase(@Param("name") String name, Pageable pageable);

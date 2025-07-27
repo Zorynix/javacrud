@@ -1,5 +1,6 @@
 package crudjava.crudjava.controller;
 
+import crudjava.crudjava.dto.CustomerDTO;
 import crudjava.crudjava.model.Customer;
 import crudjava.crudjava.service.CustomerService;
 import jakarta.validation.Valid;
@@ -16,73 +17,86 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/customers")
+@CrossOrigin(origins = "*")
 public class CustomerController {
 
     @Autowired
     private CustomerService customerService;
 
-    @PostMapping
-    public ResponseEntity<Customer> createCustomer(@Valid @RequestBody Customer customer) {
-        Customer savedCustomer = customerService.createCustomer(customer);
-        return new ResponseEntity<>(savedCustomer, HttpStatus.CREATED);
+    @PostMapping(consumes = "application/json", produces = "application/json")
+    public ResponseEntity<?> createCustomer(@Valid @RequestBody Customer customer) {
+        try {
+            Customer savedCustomer = customerService.createCustomer(customer);
+            CustomerDTO customerDTO = new CustomerDTO(savedCustomer);
+            return new ResponseEntity<>(customerDTO, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("{\"error\": \"" + e.getMessage() + "\"}");
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Customer> getCustomer(@PathVariable Long id) {
+    public ResponseEntity<CustomerDTO> getCustomer(@PathVariable Long id) {
         return customerService.findById(id)
-                .map(customer -> ResponseEntity.ok(customer))
+                .map(customer -> ResponseEntity.ok(new CustomerDTO(customer)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<Page<Customer>> getAllCustomers(Pageable pageable) {
+    public ResponseEntity<Page<CustomerDTO>> getAllCustomers(Pageable pageable) {
         Page<Customer> customers = customerService.findAll(pageable);
-        return ResponseEntity.ok(customers);
+        Page<CustomerDTO> customerDTOs = customers.map(CustomerDTO::new);
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<Customer>> searchCustomersByName(
+    public ResponseEntity<Page<CustomerDTO>> searchCustomersByName(
             @RequestParam String name, Pageable pageable) {
         Page<Customer> customers = customerService.findByNameContaining(name, pageable);
-        return ResponseEntity.ok(customers);
+        Page<CustomerDTO> customerDTOs = customers.map(CustomerDTO::new);
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<Customer> getCustomerByEmail(@PathVariable String email) {
+    public ResponseEntity<CustomerDTO> getCustomerByEmail(@PathVariable String email) {
         return customerService.findByEmail(email)
-                .map(customer -> ResponseEntity.ok(customer))
+                .map(customer -> ResponseEntity.ok(new CustomerDTO(customer)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/type/{customerType}")
-    public ResponseEntity<List<Customer>> getCustomersByType(
-            @PathVariable Customer.CustomerType customerType) {
+    public ResponseEntity<List<CustomerDTO>> getCustomersByType(
+            @PathVariable String customerType) {
         List<Customer> customers = customerService.findByCustomerType(customerType);
-        return ResponseEntity.ok(customers);
+        List<CustomerDTO> customerDTOs = customers.stream().map(CustomerDTO::new).toList();
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<Customer>> getActiveCustomers(
+    public ResponseEntity<List<CustomerDTO>> getActiveCustomers(
             @RequestParam LocalDateTime startDate,
             @RequestParam LocalDateTime endDate,
             @RequestParam(defaultValue = "1") long minOrders) {
         List<Customer> customers = customerService.findActiveCustomers(startDate, endDate, minOrders);
-        return ResponseEntity.ok(customers);
+        List<CustomerDTO> customerDTOs = customers.stream().map(CustomerDTO::new).toList();
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/high-value")
-    public ResponseEntity<List<Customer>> getHighValueCustomers(
+    public ResponseEntity<List<CustomerDTO>> getHighValueCustomers(
             @RequestParam BigDecimal minAmount,
             @RequestParam LocalDateTime since) {
         List<Customer> customers = customerService.findHighValueCustomers(minAmount, since);
-        return ResponseEntity.ok(customers);
+        List<CustomerDTO> customerDTOs = customers.stream().map(CustomerDTO::new).toList();
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/by-spending")
-    public ResponseEntity<List<Customer>> getCustomersByTotalSpending(
+    public ResponseEntity<List<CustomerDTO>> getCustomersByTotalSpending(
             @RequestParam BigDecimal totalSpent) {
         List<Customer> customers = customerService.findCustomersByTotalSpending(totalSpent);
-        return ResponseEntity.ok(customers);
+        List<CustomerDTO> customerDTOs = customers.stream().map(CustomerDTO::new).toList();
+        return ResponseEntity.ok(customerDTOs);
     }
 
     @GetMapping("/stats/new-since")
@@ -97,12 +111,13 @@ public class CustomerController {
         return ResponseEntity.ok(count);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Customer> updateCustomer(
+    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<CustomerDTO> updateCustomer(
             @PathVariable Long id, @Valid @RequestBody Customer customer) {
         try {
             Customer updatedCustomer = customerService.updateCustomer(id, customer);
-            return ResponseEntity.ok(updatedCustomer);
+            CustomerDTO customerDTO = new CustomerDTO(updatedCustomer);
+            return ResponseEntity.ok(customerDTO);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }

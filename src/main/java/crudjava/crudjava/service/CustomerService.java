@@ -75,7 +75,7 @@ public class CustomerService {
     }
 
     @Transactional(readOnly = true)
-    public List<Customer> findByCustomerType(Customer.CustomerType customerType) {
+    public List<Customer> findByCustomerType(String customerType) {
         return customerRepository.findByCustomerType(customerType);
     }
 

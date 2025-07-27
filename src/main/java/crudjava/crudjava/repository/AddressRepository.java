@@ -13,7 +13,7 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
 
     List<Address> findByCustomerId(Long customerId);
 
-    List<Address> findByCustomerIdAndAddressType(Long customerId, Address.AddressType addressType);
+    List<Address> findByCustomerIdAndAddressType(Long customerId, String addressType);
 
     List<Address> findByCity(String city);
 

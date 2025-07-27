@@ -20,7 +20,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByCategory(String category);
 
-    List<Product> findByStatus(Product.ProductStatus status);
+    List<Product> findByStatus(String status);
 
     @Query("SELECT p FROM Product p WHERE p.name ILIKE %:name% AND p.status = 'ACTIVE'")
     Page<Product> findByNameContainingAndActive(@Param("name") String name, Pageable pageable);

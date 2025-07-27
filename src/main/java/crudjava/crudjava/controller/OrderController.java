@@ -17,12 +17,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = "*")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
-    @PostMapping
+    @PostMapping(consumes = "application/json", produces = "application/json")
     public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         try {
             Order order = orderService.createOrder(request.getCustomerId(), request.getItems());
@@ -85,7 +86,7 @@ public class OrderController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<Order> updateOrderStatus(
-            @PathVariable Long id, @RequestParam Order.OrderStatus status) {
+            @PathVariable Long id, @RequestParam String status) {
         try {
             Order updatedOrder = orderService.updateOrderStatus(id, status);
             return ResponseEntity.ok(updatedOrder);

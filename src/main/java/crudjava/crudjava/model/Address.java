@@ -36,9 +36,8 @@ public class Address {
     @Column(name = "postal_code", length = 20)
     private String postalCode;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "address_type", nullable = false, columnDefinition = "address_type")
-    private AddressType addressType = AddressType.BILLING;
+    @Column(name = "address_type", nullable = false, length = 20)
+    private String addressType = "BILLING";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
@@ -47,7 +46,7 @@ public class Address {
 
     public Address() {}
 
-    public Address(String street, String city, String country, String postalCode, AddressType addressType, Customer customer) {
+    public Address(String street, String city, String country, String postalCode, String addressType, Customer customer) {
         this.street = street;
         this.city = city;
         this.country = country;
@@ -71,13 +70,9 @@ public class Address {
     public String getPostalCode() { return postalCode; }
     public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
 
-    public AddressType getAddressType() { return addressType; }
-    public void setAddressType(AddressType addressType) { this.addressType = addressType; }
+    public String getAddressType() { return addressType; }
+    public void setAddressType(String addressType) { this.addressType = addressType; }
 
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
-
-    public enum AddressType {
-        BILLING, SHIPPING
-    }
 }

@@ -44,7 +44,7 @@ public class OrderService {
     @Autowired
     private InventoryService inventoryService;
 
-    @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
+    // @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
     public Order createOrder(Long customerId, List<OrderItemRequest> items) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
@@ -87,21 +87,21 @@ public class OrderService {
     }
 
     @CircuitBreaker(name = "orderService")
-    public Order updateOrderStatus(Long orderId, Order.OrderStatus newStatus) {
+    public Order updateOrderStatus(Long orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
-        Order.OrderStatus oldStatus = order.getStatus();
+        String oldStatus = order.getStatus();
         order.setStatus(newStatus);
 
         switch (newStatus) {
-            case SHIPPED:
+            case "SHIPPED":
                 order.setShippedAt(LocalDateTime.now());
                 break;
-            case DELIVERED:
+            case "DELIVERED":
                 order.setDeliveredAt(LocalDateTime.now());
                 break;
-            case CANCELLED:
+            case "CANCELLED":
                 final String orderNumber = order.getOrderNumber();
                 order.getOrderItems().forEach(item ->
                     inventoryService.releaseInventory(item.getProduct().getId(),
@@ -139,8 +139,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<Order> findHighValueOrders(BigDecimal minAmount) {
-        List<Order.OrderStatus> statuses = List.of(Order.OrderStatus.CONFIRMED,
-                Order.OrderStatus.PROCESSING, Order.OrderStatus.SHIPPED, Order.OrderStatus.DELIVERED);
+        List<String> statuses = List.of("CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED");
         return orderRepository.findHighValueOrders(minAmount, statuses);
     }
 
@@ -162,7 +161,7 @@ public class OrderService {
                     order.getOrderNumber(),
                     order.getCustomer().getId(),
                     order.getCustomer().getEmail(),
-                    order.getStatus().name(),
+                    order.getStatus(),
                     order.getTotalAmount(),
                     LocalDateTime.now()
             );
@@ -177,7 +176,7 @@ public class OrderService {
         }
     }
 
-    private void publishOrderStatusChangeEvent(Order order, Order.OrderStatus oldStatus, Order.OrderStatus newStatus) {
+    private void publishOrderStatusChangeEvent(Order order, String oldStatus, String newStatus) {
         publishOrderEvent(order, "ORDER_STATUS_CHANGED");
     }
 

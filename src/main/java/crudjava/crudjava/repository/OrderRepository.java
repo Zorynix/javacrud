@@ -20,11 +20,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByCustomerId(Long customerId);
 
-    List<Order> findByStatus(Order.OrderStatus status);
+    List<Order> findByStatus(String status);
 
     @Query("SELECT o FROM Order o WHERE o.customer.id = :customerId AND o.status = :status")
     Page<Order> findByCustomerIdAndStatus(@Param("customerId") Long customerId,
-                                        @Param("status") Order.OrderStatus status,
+                                        @Param("status") String status,
                                         Pageable pageable);
 
     @Query("SELECT o FROM Order o WHERE o.createdAt BETWEEN :startDate AND :endDate ORDER BY o.createdAt DESC")
@@ -34,7 +34,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o WHERE o.totalAmount >= :minAmount AND o.status IN :statuses")
     List<Order> findHighValueOrders(@Param("minAmount") BigDecimal minAmount,
-                                  @Param("statuses") List<Order.OrderStatus> statuses);
+                                  @Param("statuses") List<String> statuses);
 
     @Query(value = """
         SELECT DATE(o.created_at) as order_date, 

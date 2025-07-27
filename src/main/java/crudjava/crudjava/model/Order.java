@@ -36,9 +36,8 @@ public class Order {
     @JsonBackReference("customer-orders")
     private Customer customer;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "order_status")
-    private OrderStatus status = OrderStatus.PENDING;
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "PENDING";
 
     @NotNull(message = "Total amount is required")
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
@@ -106,8 +105,8 @@ public class Order {
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
 
-    public OrderStatus getStatus() { return status; }
-    public void setStatus(OrderStatus status) { this.status = status; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
@@ -141,8 +140,4 @@ public class Order {
 
     public Long getVersion() { return version; }
     public void setVersion(Long version) { this.version = version; }
-
-    public enum OrderStatus {
-        PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED
-    }
 }

@@ -1,5 +1,6 @@
 package crudjava.crudjava.controller;
 
+import crudjava.crudjava.dto.ProductDTO;
 import crudjava.crudjava.model.Product;
 import crudjava.crudjava.service.InventoryService;
 import crudjava.crudjava.service.ProductService;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
+@CrossOrigin(origins = "*")
 public class ProductController {
 
     @Autowired
@@ -24,73 +26,81 @@ public class ProductController {
     @Autowired
     private InventoryService inventoryService;
 
-    @PostMapping
-    public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
+    @PostMapping(consumes = "application/json", produces = "application/json")
+    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody Product product) {
         Product savedProduct = productService.createProduct(product);
-        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+        ProductDTO productDTO = new ProductDTO(savedProduct);
+        return new ResponseEntity<>(productDTO, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProduct(@PathVariable Long id) {
+    public ResponseEntity<ProductDTO> getProduct(@PathVariable Long id) {
         return productService.findById(id)
-                .map(product -> ResponseEntity.ok(product))
+                .map(product -> ResponseEntity.ok(new ProductDTO(product)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<Page<Product>> getAllProducts(Pageable pageable) {
+    public ResponseEntity<Page<ProductDTO>> getAllProducts(Pageable pageable) {
         Page<Product> products = productService.findAll(pageable);
-        return ResponseEntity.ok(products);
+        Page<ProductDTO> productDTOs = products.map(ProductDTO::new);
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/sku/{sku}")
-    public ResponseEntity<Product> getProductBySku(@PathVariable String sku) {
+    public ResponseEntity<ProductDTO> getProductBySku(@PathVariable String sku) {
         return productService.findBySku(sku)
-                .map(product -> ResponseEntity.ok(product))
+                .map(product -> ResponseEntity.ok(new ProductDTO(product)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/category/{category}")
-    public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable String category) {
+    public ResponseEntity<List<ProductDTO>> getProductsByCategory(@PathVariable String category) {
         List<Product> products = productService.findByCategory(category);
-        return ResponseEntity.ok(products);
+        List<ProductDTO> productDTOs = products.stream().map(ProductDTO::new).toList();
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Product>> getProductsByStatus(@PathVariable Product.ProductStatus status) {
+    public ResponseEntity<List<ProductDTO>> getProductsByStatus(@PathVariable String status) {
         List<Product> products = productService.findByStatus(status);
-        return ResponseEntity.ok(products);
+        List<ProductDTO> productDTOs = products.stream().map(ProductDTO::new).toList();
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Page<Product>> searchProducts(
+    public ResponseEntity<Page<ProductDTO>> searchProducts(
             @RequestParam String name, Pageable pageable) {
         Page<Product> products = productService.findByNameContainingAndActive(name, pageable);
-        return ResponseEntity.ok(products);
+        Page<ProductDTO> productDTOs = products.map(ProductDTO::new);
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<Page<Product>> filterProducts(
+    public ResponseEntity<Page<ProductDTO>> filterProducts(
             @RequestParam String category,
             @RequestParam BigDecimal minPrice,
             @RequestParam BigDecimal maxPrice,
             Pageable pageable) {
         Page<Product> products = productService.findByCategoryAndPriceRange(
                 category, minPrice, maxPrice, pageable);
-        return ResponseEntity.ok(products);
+        Page<ProductDTO> productDTOs = products.map(ProductDTO::new);
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/low-stock")
-    public ResponseEntity<List<Product>> getLowStockProducts() {
+    public ResponseEntity<List<ProductDTO>> getLowStockProducts() {
         List<Product> products = inventoryService.getLowStockProducts();
-        return ResponseEntity.ok(products);
+        List<ProductDTO> productDTOs = products.stream().map(ProductDTO::new).toList();
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/best-selling")
-    public ResponseEntity<List<Product>> getBestSellingProducts(
+    public ResponseEntity<List<ProductDTO>> getBestSellingProducts(
             @RequestParam(defaultValue = "10") int limit) {
         List<Product> products = inventoryService.getBestSellingProducts(limit);
-        return ResponseEntity.ok(products);
+        List<ProductDTO> productDTOs = products.stream().map(ProductDTO::new).toList();
+        return ResponseEntity.ok(productDTOs);
     }
 
     @GetMapping("/categories")
@@ -105,23 +115,25 @@ public class ProductController {
         return ResponseEntity.ok(stats);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(
+    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<ProductDTO> updateProduct(
             @PathVariable Long id, @Valid @RequestBody Product product) {
         try {
             Product updatedProduct = productService.updateProduct(id, product);
-            return ResponseEntity.ok(updatedProduct);
+            ProductDTO productDTO = new ProductDTO(updatedProduct);
+            return ResponseEntity.ok(productDTO);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Product> updateProductStatus(
-            @PathVariable Long id, @RequestParam Product.ProductStatus status) {
+    public ResponseEntity<ProductDTO> updateProductStatus(
+            @PathVariable Long id, @RequestParam String status) {
         try {
             Product updatedProduct = productService.updateProductStatus(id, status);
-            return ResponseEntity.ok(updatedProduct);
+            ProductDTO productDTO = new ProductDTO(updatedProduct);
+            return ResponseEntity.ok(productDTO);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
