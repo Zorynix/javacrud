@@ -2,6 +2,8 @@ package crudjava.crudjava.config;
 
 import java.nio.charset.StandardCharsets;
 
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -25,5 +27,23 @@ public class WebConfig implements WebMvcConfigurer {
         StringHttpMessageConverter converter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
         converter.setWriteAcceptCharset(false);
         return converter;
+    }
+
+    @Bean
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatCustomizer() {
+        return factory -> {
+            factory.addConnectorCustomizers(connector -> {
+                connector.setURIEncoding(StandardCharsets.UTF_8.name());
+                connector.setProperty("relaxedQueryChars", "|{}[]\\");
+                connector.setProperty("relaxedPathChars", "|{}[]\\");
+                connector.setProperty("rejectIllegalHeader", "false");
+                connector.setProperty("allowEncodedSlash", "true");
+            });
+            
+            factory.addContextCustomizers(context -> {
+                context.setRequestCharacterEncoding(StandardCharsets.UTF_8.name());
+                context.setResponseCharacterEncoding(StandardCharsets.UTF_8.name());
+            });
+        };
     }
 }

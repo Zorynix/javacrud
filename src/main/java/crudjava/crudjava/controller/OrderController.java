@@ -4,9 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,9 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import crudjava.crudjava.model.Order;
+import crudjava.crudjava.dto.CreateOrderRequestDTO;
+import crudjava.crudjava.dto.OrderDTO;
 import crudjava.crudjava.service.OrderService;
-import crudjava.crudjava.util.UrlUtils;
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,60 +29,57 @@ import jakarta.validation.Valid;
 @CrossOrigin(origins = "*")
 public class OrderController {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
+    private final OrderService orderService;
 
-    @Autowired
-    private OrderService orderService;
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
 
     @PostMapping(consumes = "application/json", produces = "application/json")
-    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
-        logger.info("Creating new order for customer ID: {}", request.getCustomerId());
-        Order order = orderService.createOrder(request.getCustomerId(), request.getItems());
-        logger.info("Successfully created order with ID: {} and number: {}", order.getId(), order.getOrderNumber());
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+    public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
+        OrderDTO orderDTO = orderService.createOrder(request);
+        return new ResponseEntity<>(orderDTO, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<OrderDTO>> getAllOrders(Pageable pageable) {
+        Page<OrderDTO> orders = orderService.findAll(pageable);
+        return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+    public ResponseEntity<OrderDTO> getOrder(@PathVariable Long id) {
         return orderService.findById(id)
-                .map(order -> ResponseEntity.ok(order))
+                .map(orderDTO -> ResponseEntity.ok(orderDTO))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/number/{orderNumber}")
-    public ResponseEntity<Order> getOrderByNumber(@PathVariable String orderNumber) {
-        String decodedOrderNumber = UrlUtils.autoDecodeIfNeeded(orderNumber);
-        logger.info("Searching order by number: '{}' (decoded: '{}')", orderNumber, decodedOrderNumber);
-        return orderService.findByOrderNumber(decodedOrderNumber)
-                .map(order -> {
-                    logger.info("Found order with number: {}", order.getOrderNumber());
-                    return ResponseEntity.ok(order);
-                })
-                .orElseGet(() -> {
-                    logger.warn("Order not found with number: {}", decodedOrderNumber);
-                    return ResponseEntity.notFound().build();
-                });
+    public ResponseEntity<OrderDTO> getOrderByNumber(@PathVariable String orderNumber) {
+        return orderService.findByOrderNumber(orderNumber)
+                .map(orderDTO -> ResponseEntity.ok(orderDTO))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<Page<Order>> getOrdersByCustomer(
+    public ResponseEntity<Page<OrderDTO>> getOrdersByCustomer(
             @PathVariable Long customerId, Pageable pageable) {
-        Page<Order> orders = orderService.findOrdersByCustomer(customerId, pageable);
+        Page<OrderDTO> orders = orderService.findOrdersByCustomer(customerId, pageable);
         return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/date-range")
-    public ResponseEntity<Page<Order>> getOrdersByDateRange(
+    public ResponseEntity<Page<OrderDTO>> getOrdersByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             Pageable pageable) {
-        Page<Order> orders = orderService.findOrdersByDateRange(startDate, endDate, pageable);
+        Page<OrderDTO> orders = orderService.findOrdersByDateRange(startDate, endDate, pageable);
         return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/high-value")
-    public ResponseEntity<List<Order>> getHighValueOrders(@RequestParam BigDecimal minAmount) {
-        List<Order> orders = orderService.findHighValueOrders(minAmount);
+    public ResponseEntity<List<OrderDTO>> getHighValueOrders(@RequestParam BigDecimal minAmount) {
+        List<OrderDTO> orders = orderService.findHighValueOrders(minAmount);
         return ResponseEntity.ok(orders);
     }
 
@@ -105,26 +99,9 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Order> updateOrderStatus(
+    public ResponseEntity<OrderDTO> updateOrderStatus(
             @PathVariable Long id, @RequestParam String status) {
-        try {
-            Order updatedOrder = orderService.updateOrderStatus(id, status);
-            return ResponseEntity.ok(updatedOrder);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    public static class CreateOrderRequest {
-        private Long customerId;
-        private List<OrderService.OrderItemRequest> items;
-
-        public CreateOrderRequest() {}
-
-        public Long getCustomerId() { return customerId; }
-        public void setCustomerId(Long customerId) { this.customerId = customerId; }
-
-        public List<OrderService.OrderItemRequest> getItems() { return items; }
-        public void setItems(List<OrderService.OrderItemRequest> items) { this.items = items; }
+        OrderDTO updatedOrder = orderService.updateOrderStatus(id, status);
+        return ResponseEntity.ok(updatedOrder);
     }
 }

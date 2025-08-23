@@ -1,9 +1,25 @@
 package crudjava.crudjava.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "addresses", indexes = {
@@ -11,11 +27,17 @@ import jakarta.validation.constraints.Size;
     @Index(name = "idx_address_city", columnList = "city"),
     @Index(name = "idx_address_country", columnList = "country")
 })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"customer"})
 public class Address {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "address_seq")
     @SequenceGenerator(name = "address_seq", sequenceName = "address_sequence", allocationSize = 1)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @NotBlank(message = "Street is required")
@@ -44,8 +66,6 @@ public class Address {
     @JsonBackReference("customer-addresses")
     private Customer customer;
 
-    public Address() {}
-
     public Address(String street, String city, String country, String postalCode, String addressType, Customer customer) {
         this.street = street;
         this.city = city;
@@ -54,25 +74,4 @@ public class Address {
         this.addressType = addressType;
         this.customer = customer;
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getStreet() { return street; }
-    public void setStreet(String street) { this.street = street; }
-
-    public String getCity() { return city; }
-    public void setCity(String city) { this.city = city; }
-
-    public String getCountry() { return country; }
-    public void setCountry(String country) { this.country = country; }
-
-    public String getPostalCode() { return postalCode; }
-    public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
-
-    public String getAddressType() { return addressType; }
-    public void setAddressType(String addressType) { this.addressType = addressType; }
-
-    public Customer getCustomer() { return customer; }
-    public void setCustomer(Customer customer) { this.customer = customer; }
 }

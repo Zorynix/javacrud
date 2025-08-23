@@ -1,25 +1,24 @@
 package crudjava.crudjava.service;
 
-import crudjava.crudjava.config.RabbitConfig;
-import crudjava.crudjava.dto.InventoryEventDto;
-import crudjava.crudjava.model.Product;
-import crudjava.crudjava.repository.ProductRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import crudjava.crudjava.config.RabbitConfig;
+import crudjava.crudjava.dto.InventoryEventDto;
+import crudjava.crudjava.dto.ProductDTO;
+import crudjava.crudjava.model.Product;
+import crudjava.crudjava.repository.ProductRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 @Transactional
@@ -122,13 +121,17 @@ public class InventoryService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "lowStockProducts")
-    public List<Product> getLowStockProducts() {
-        return productRepository.findLowStockProducts(LOW_STOCK_THRESHOLD);
+    public List<ProductDTO> getLowStockProducts() {
+        logger.info("Finding low stock products with threshold: {}", LOW_STOCK_THRESHOLD);
+        List<Product> products = productRepository.findLowStockProducts(LOW_STOCK_THRESHOLD);
+        return products.stream().map(ProductDTO::new).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<Product> getBestSellingProducts(int limit) {
-        return productRepository.findBestSellingProducts(limit);
+    public List<ProductDTO> getBestSellingProducts(int limit) {
+        logger.info("Finding best selling products, limit: {}", limit);
+        List<Product> products = productRepository.findBestSellingProducts(limit);
+        return products.stream().map(ProductDTO::new).toList();
     }
 
     @Transactional(readOnly = true)

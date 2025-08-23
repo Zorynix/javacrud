@@ -1,15 +1,33 @@
 package crudjava.crudjava.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "customers", indexes = {
@@ -17,11 +35,17 @@ import java.util.List;
     @Index(name = "idx_customer_phone", columnList = "phone"),
     @Index(name = "idx_customer_created_at", columnList = "created_at")
 })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"addresses", "orders"})
 public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "customer_seq")
     @SequenceGenerator(name = "customer_seq", sequenceName = "customer_sequence", allocationSize = 1)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @NotBlank(message = "First name is required")
@@ -37,6 +61,7 @@ public class Customer {
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Column(name = "email", unique = true, nullable = false)
+    @EqualsAndHashCode.Include
     private String email;
 
     @Column(name = "phone", length = 20)
@@ -64,8 +89,6 @@ public class Customer {
     @Version
     private Long version;
 
-    public Customer() {}
-
     public Customer(String firstName, String lastName, String email, String phone, String customerType) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -73,37 +96,4 @@ public class Customer {
         this.phone = phone;
         this.customerType = customerType;
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
-    public String getCustomerType() { return customerType; }
-    public void setCustomerType(String customerType) { this.customerType = customerType; }
-
-    public List<Address> getAddresses() { return addresses; }
-    public void setAddresses(List<Address> addresses) { this.addresses = addresses; }
-
-    public List<Order> getOrders() { return orders; }
-    public void setOrders(List<Order> orders) { this.orders = orders; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
 }

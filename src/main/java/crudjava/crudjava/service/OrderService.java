@@ -10,14 +10,20 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import crudjava.crudjava.config.RabbitConfig;
+import crudjava.crudjava.dto.CreateOrderRequestDTO;
+import crudjava.crudjava.dto.OrderDTO;
 import crudjava.crudjava.dto.OrderEventDto;
+import crudjava.crudjava.dto.OrderItemRequestDTO;
+import crudjava.crudjava.exception.CustomerNotFoundException;
+import crudjava.crudjava.exception.InsufficientStockException;
+import crudjava.crudjava.exception.OrderNotFoundException;
+import crudjava.crudjava.exception.ProductNotFoundException;
 import crudjava.crudjava.model.Customer;
 import crudjava.crudjava.model.Order;
 import crudjava.crudjava.model.OrderItem;
@@ -25,6 +31,7 @@ import crudjava.crudjava.model.Product;
 import crudjava.crudjava.repository.CustomerRepository;
 import crudjava.crudjava.repository.OrderRepository;
 import crudjava.crudjava.repository.ProductRepository;
+import crudjava.crudjava.util.UrlUtils;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
@@ -33,25 +40,28 @@ public class OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
+    private final CustomerRepository customerRepository;
+    private final ProductRepository productRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final InventoryService inventoryService;
 
-    @Autowired
-    private CustomerRepository customerRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Autowired
-    private InventoryService inventoryService;
+    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository,
+                       ProductRepository productRepository, RabbitTemplate rabbitTemplate,
+                       InventoryService inventoryService) {
+        this.orderRepository = orderRepository;
+        this.customerRepository = customerRepository;
+        this.productRepository = productRepository;
+        this.rabbitTemplate = rabbitTemplate;
+        this.inventoryService = inventoryService;
+    }
 
     @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
-    public Order createOrder(Long customerId, List<OrderItemRequest> items) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
+    public OrderDTO createOrder(CreateOrderRequestDTO request) {
+        logger.info("Creating new order for customer ID: {}", request.getCustomerId());
+        
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found: " + request.getCustomerId()));
 
         String orderNumber = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
@@ -60,12 +70,12 @@ public class OrderService {
 
         order.setOrderItems(new ArrayList<>());
 
-        for (OrderItemRequest itemRequest : items) {
+        for (OrderItemRequestDTO itemRequest : request.getOrderItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found: " + itemRequest.getProductId()));
+                    .orElseThrow(() -> new ProductNotFoundException("Product not found: " + itemRequest.getProductId()));
 
             if (product.getStockQuantity() < itemRequest.getQuantity()) {
-                throw new IllegalArgumentException("Insufficient stock for product: " + product.getName());
+                throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
             }
 
             OrderItem orderItem = new OrderItem(order, product, itemRequest.getQuantity(), product.getPrice());
@@ -84,19 +94,21 @@ public class OrderService {
 
         publishOrderEvent(order, "ORDER_CREATED");
 
-        logger.info("Order created successfully: {}", orderNumber);
-        return order;
+        logger.info("Successfully created order with ID: {} and number: {}", order.getId(), order.getOrderNumber());
+        return new OrderDTO(order);
     }
 
-    public Order createOrderFallback(Long customerId, List<OrderItemRequest> items, Exception ex) {
-        logger.error("Order creation failed for customer {}: {}", customerId, ex.getMessage());
+    public OrderDTO createOrderFallback(CreateOrderRequestDTO request, Exception ex) {
+        logger.error("Order creation failed for customer {}: {}", request.getCustomerId(), ex.getMessage());
         throw new RuntimeException("Order service temporarily unavailable. Please try again later.");
     }
 
     @CircuitBreaker(name = "orderService")
-    public Order updateOrderStatus(Long orderId, String newStatus) {
+    public OrderDTO updateOrderStatus(Long orderId, String newStatus) {
+        logger.info("Updating order {} status to {}", orderId, newStatus);
+        
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
 
         String oldStatus = order.getStatus();
         order.setStatus(newStatus);
@@ -121,42 +133,67 @@ public class OrderService {
         publishOrderStatusChangeEvent(order, oldStatus, newStatus);
 
         logger.info("Order {} status changed from {} to {}", order.getOrderNumber(), oldStatus, newStatus);
-        return order;
+        return new OrderDTO(order);
     }
 
     @Transactional(readOnly = true)
-    public Optional<Order> findById(Long id) {
-        return orderRepository.findById(id);
+    public Page<OrderDTO> findAll(Pageable pageable) {
+        logger.info("Finding all orders with pagination");
+        Page<Order> orders = orderRepository.findAll(pageable);
+        return orders.map(OrderDTO::new);
     }
 
     @Transactional(readOnly = true)
-    public Optional<Order> findByOrderNumber(String orderNumber) {
-        return orderRepository.findByOrderNumber(orderNumber);
+    public Optional<OrderDTO> findById(Long id) {
+        return orderRepository.findById(id)
+                .map(order -> {
+                    logger.info("Found order with ID: {}", id);
+                    return new OrderDTO(order);
+                });
     }
 
     @Transactional(readOnly = true)
-    public Page<Order> findOrdersByCustomer(Long customerId, Pageable pageable) {
-        return orderRepository.findByCustomerIdAndStatus(customerId, null, pageable);
+    public Optional<OrderDTO> findByOrderNumber(String orderNumber) {
+        String decodedOrderNumber = UrlUtils.autoDecodeIfNeeded(orderNumber);
+        logger.info("Searching order by number: {}", decodedOrderNumber);
+        return orderRepository.findByOrderNumber(decodedOrderNumber)
+                .map(order -> {
+                    logger.info("Found order with number: {}", decodedOrderNumber);
+                    return new OrderDTO(order);
+                });
     }
 
     @Transactional(readOnly = true)
-    public Page<Order> findOrdersByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return orderRepository.findOrdersByDateRange(startDate, endDate, pageable);
+    public Page<OrderDTO> findOrdersByCustomer(Long customerId, Pageable pageable) {
+        logger.info("Finding orders for customer: {}", customerId);
+        Page<Order> orders = orderRepository.findByCustomerIdAndStatus(customerId, null, pageable);
+        return orders.map(OrderDTO::new);
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findHighValueOrders(BigDecimal minAmount) {
+    public Page<OrderDTO> findOrdersByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        logger.info("Finding orders between {} and {}", startDate, endDate);
+        Page<Order> orders = orderRepository.findOrdersByDateRange(startDate, endDate, pageable);
+        return orders.map(OrderDTO::new);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderDTO> findHighValueOrders(BigDecimal minAmount) {
+        logger.info("Finding high value orders with min amount: {}", minAmount);
         List<String> statuses = List.of("CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED");
-        return orderRepository.findHighValueOrders(minAmount, statuses);
+        List<Order> orders = orderRepository.findHighValueOrders(minAmount, statuses);
+        return orders.stream().map(OrderDTO::new).toList();
     }
 
     @Transactional(readOnly = true)
     public List<Object[]> getDailySalesReport(LocalDateTime startDate) {
+        logger.info("Generating daily sales report since: {}", startDate);
         return orderRepository.getDailySalesReport(startDate);
     }
 
     @Transactional(readOnly = true)
     public BigDecimal getTotalRevenue(LocalDateTime startDate, LocalDateTime endDate) {
+        logger.info("Calculating total revenue between {} and {}", startDate, endDate);
         BigDecimal revenue = orderRepository.getTotalRevenueByPeriod(startDate, endDate);
         return revenue != null ? revenue : BigDecimal.ZERO;
     }
@@ -185,28 +222,5 @@ public class OrderService {
 
     private void publishOrderStatusChangeEvent(Order order, String oldStatus, String newStatus) {
         publishOrderEvent(order, "ORDER_STATUS_CHANGED");
-    }
-
-    public static class OrderItemRequest {
-        private Long productId;
-        private Integer quantity;
-        private BigDecimal discountAmount;
-
-        public OrderItemRequest() {}
-
-        public OrderItemRequest(Long productId, Integer quantity, BigDecimal discountAmount) {
-            this.productId = productId;
-            this.quantity = quantity;
-            this.discountAmount = discountAmount;
-        }
-
-        public Long getProductId() { return productId; }
-        public void setProductId(Long productId) { this.productId = productId; }
-
-        public Integer getQuantity() { return quantity; }
-        public void setQuantity(Integer quantity) { this.quantity = quantity; }
-
-        public BigDecimal getDiscountAmount() { return discountAmount; }
-        public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
     }
 }
