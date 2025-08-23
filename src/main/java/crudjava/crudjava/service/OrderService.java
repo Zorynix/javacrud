@@ -1,13 +1,12 @@
 package crudjava.crudjava.service;
 
-import crudjava.crudjava.config.RabbitConfig;
-import crudjava.crudjava.dto.InventoryEventDto;
-import crudjava.crudjava.dto.OrderEventDto;
-import crudjava.crudjava.model.*;
-import crudjava.crudjava.repository.CustomerRepository;
-import crudjava.crudjava.repository.OrderRepository;
-import crudjava.crudjava.repository.ProductRepository;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -17,11 +16,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import crudjava.crudjava.config.RabbitConfig;
+import crudjava.crudjava.dto.OrderEventDto;
+import crudjava.crudjava.model.Customer;
+import crudjava.crudjava.model.Order;
+import crudjava.crudjava.model.OrderItem;
+import crudjava.crudjava.model.Product;
+import crudjava.crudjava.repository.CustomerRepository;
+import crudjava.crudjava.repository.OrderRepository;
+import crudjava.crudjava.repository.ProductRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 @Transactional
@@ -44,7 +48,7 @@ public class OrderService {
     @Autowired
     private InventoryService inventoryService;
 
-    // @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
+    @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
     public Order createOrder(Long customerId, List<OrderItemRequest> items) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
@@ -53,6 +57,8 @@ public class OrderService {
 
         Order order = new Order(orderNumber, customer);
         order = orderRepository.save(order);
+
+        order.setOrderItems(new ArrayList<>());
 
         for (OrderItemRequest itemRequest : items) {
             Product product = productRepository.findById(itemRequest.getProductId())
@@ -67,11 +73,12 @@ public class OrderService {
                 orderItem.setDiscountAmount(itemRequest.getDiscountAmount());
             }
 
+            order.getOrderItems().add(orderItem);
+
             inventoryService.reserveInventory(product.getId(), itemRequest.getQuantity(),
                     "Order reservation: " + orderNumber);
         }
 
-        order = orderRepository.findById(order.getId()).orElseThrow();
         order.calculateTotalAmount();
         order = orderRepository.save(order);
 

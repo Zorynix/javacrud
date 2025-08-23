@@ -1,24 +1,40 @@
 package crudjava.crudjava.controller;
 
-import crudjava.crudjava.dto.ProductDTO;
-import crudjava.crudjava.model.Product;
-import crudjava.crudjava.service.InventoryService;
-import crudjava.crudjava.service.ProductService;
-import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.util.List;
+import crudjava.crudjava.dto.ProductDTO;
+import crudjava.crudjava.model.Product;
+import crudjava.crudjava.service.InventoryService;
+import crudjava.crudjava.service.ProductService;
+import crudjava.crudjava.util.UrlUtils;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/products")
 @CrossOrigin(origins = "*")
 public class ProductController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
 
     @Autowired
     private ProductService productService;
@@ -28,8 +44,10 @@ public class ProductController {
 
     @PostMapping(consumes = "application/json", produces = "application/json")
     public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody Product product) {
+        logger.info("Creating new product with SKU: {}", product.getSku());
         Product savedProduct = productService.createProduct(product);
         ProductDTO productDTO = new ProductDTO(savedProduct);
+        logger.info("Successfully created product with ID: {}", savedProduct.getId());
         return new ResponseEntity<>(productDTO, HttpStatus.CREATED);
     }
 
@@ -49,9 +67,17 @@ public class ProductController {
 
     @GetMapping("/sku/{sku}")
     public ResponseEntity<ProductDTO> getProductBySku(@PathVariable String sku) {
-        return productService.findBySku(sku)
-                .map(product -> ResponseEntity.ok(new ProductDTO(product)))
-                .orElse(ResponseEntity.notFound().build());
+        String decodedSku = UrlUtils.autoDecodeIfNeeded(sku);
+        logger.info("Searching product by SKU: '{}' (decoded: '{}')", sku, decodedSku);
+        return productService.findBySku(decodedSku)
+                .map(product -> {
+                    logger.info("Found product with SKU: {}", product.getSku());
+                    return ResponseEntity.ok(new ProductDTO(product));
+                })
+                .orElseGet(() -> {
+                    logger.warn("Product not found with SKU: {}", decodedSku);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
     @GetMapping("/category/{category}")
@@ -71,8 +97,11 @@ public class ProductController {
     @GetMapping("/search")
     public ResponseEntity<Page<ProductDTO>> searchProducts(
             @RequestParam String name, Pageable pageable) {
-        Page<Product> products = productService.findByNameContainingAndActive(name, pageable);
+        String decodedName = UrlUtils.autoDecodeIfNeeded(name);
+        logger.info("Searching products by name: '{}' (decoded: '{}')", name, decodedName);
+        Page<Product> products = productService.findByNameContainingAndActive(decodedName, pageable);
         Page<ProductDTO> productDTOs = products.map(ProductDTO::new);
+        logger.info("Found {} products matching name search", products.getTotalElements());
         return ResponseEntity.ok(productDTOs);
     }
 
