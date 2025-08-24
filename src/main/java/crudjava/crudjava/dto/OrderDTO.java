@@ -6,60 +6,55 @@ import java.util.List;
 
 import crudjava.crudjava.model.Order;
 import crudjava.crudjava.model.OrderItem;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-public class OrderDTO {
-    private Long id;
-    private String orderNumber;
-    private Long customerId;
-    private String customerName;
-    private BigDecimal totalAmount;
-    private String status;
-    private LocalDateTime orderDate;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private List<OrderItemDTO> items;
-
+public record OrderDTO(
+    Long id,
+    String orderNumber,
+    Long customerId,
+    String customerName,
+    BigDecimal totalAmount,
+    String status,
+    LocalDateTime orderDate,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    List<OrderItemDTO> items
+) {
     public OrderDTO(Order order) {
-        this.id = order.getId();
-        this.orderNumber = order.getOrderNumber();
-        this.customerId = order.getCustomer().getId();
-        this.customerName = order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName();
-        this.totalAmount = order.getTotalAmount();
-        this.status = order.getStatus();
-        this.orderDate = order.getCreatedAt();
-        this.createdAt = order.getCreatedAt();
-        this.updatedAt = order.getUpdatedAt();
-        
-        if (order.getOrderItems() != null) {
-            this.items = order.getOrderItems().stream()
-                .map(OrderItemDTO::new)
-                .toList();
-        }
+        this(
+            order.getId(),
+            order.getOrderNumber(),
+            order.getCustomer().getId(),
+            order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName(),
+            order.getTotalAmount(),
+            order.getStatus(),
+            order.getCreatedAt(),
+            order.getCreatedAt(),
+            order.getUpdatedAt(),
+            order.getOrderItems() != null
+                ? order.getOrderItems().stream().map(OrderItemDTO::new).toList()
+                : null
+        );
     }
 
-    @Data
-    @NoArgsConstructor
-    public static class OrderItemDTO {
-        private Long id;
-        private Long productId;
-        private String productName;
-        private String productSku;
-        private Integer quantity;
-        private BigDecimal unitPrice;
-        private BigDecimal totalPrice;
-
+    public record OrderItemDTO(
+        Long id,
+        Long productId,
+        String productName,
+        String productSku,
+        Integer quantity,
+        BigDecimal unitPrice,
+        BigDecimal totalPrice
+    ) {
         public OrderItemDTO(OrderItem item) {
-            this.id = item.getId();
-            this.productId = item.getProduct().getId();
-            this.productName = item.getProduct().getName();
-            this.productSku = item.getProduct().getSku();
-            this.quantity = item.getQuantity();
-            this.unitPrice = item.getUnitPrice();
-            this.totalPrice = item.getTotalPrice();
+            this(
+                item.getId(),
+                item.getProduct().getId(),
+                item.getProduct().getName(),
+                item.getProduct().getSku(),
+                item.getQuantity(),
+                item.getUnitPrice(),
+                item.getTotalPrice()
+            );
         }
     }
 }

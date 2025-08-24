@@ -21,9 +21,11 @@ import crudjava.crudjava.model.Customer;
 import crudjava.crudjava.repository.CustomerRepository;
 import crudjava.crudjava.repository.OrderRepository;
 import crudjava.crudjava.util.UrlUtils;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CustomerService {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerService.class);
@@ -31,25 +33,21 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
 
-    public CustomerService(CustomerRepository customerRepository, OrderRepository orderRepository) {
-        this.customerRepository = customerRepository;
-        this.orderRepository = orderRepository;
-    }
-
     public CustomerDTO createCustomer(CreateCustomerRequestDTO request) {
-        logger.info("Creating new customer with email: {}", request.getEmail());
+        logger.info("Creating new customer with email: {}", request.email());
         
-        if (customerRepository.findByEmail(request.getEmail()).isPresent()) {
-            logger.warn("Attempt to create customer with existing email: {}", request.getEmail());
-            throw new DuplicateEmailException("Customer with email " + request.getEmail() + " already exists");
+        if (customerRepository.findByEmail(request.email()).isPresent()) {
+            logger.warn("Attempt to create customer with existing email: {}", request.email());
+            throw new DuplicateEmailException("Customer with email " + request.email() + " already exists");
         }
 
-        Customer customer = new Customer();
-        customer.setFirstName(request.getFirstName());
-        customer.setLastName(request.getLastName());
-        customer.setEmail(request.getEmail());
-        customer.setPhone(request.getPhone());
-        customer.setCustomerType(request.getCustomerType() != null ? request.getCustomerType() : "REGULAR");
+        Customer customer = Customer.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .email(request.email())
+                .phone(request.phone())
+                .customerType(request.customerType() != null ? request.customerType() : "REGULAR")
+                .build();
 
         Customer savedCustomer = customerRepository.save(customer);
         logger.info("Successfully created customer with ID: {}", savedCustomer.getId());
@@ -63,19 +61,19 @@ public class CustomerService {
         Customer existingCustomer = customerRepository.findById(id)
                 .orElseThrow(() -> new CustomerNotFoundException("Customer not found: " + id));
 
-        if (!existingCustomer.getEmail().equals(request.getEmail())) {
-            if (customerRepository.findByEmail(request.getEmail()).isPresent()) {
-                logger.warn("Attempt to update customer with existing email: {}", request.getEmail());
-                throw new DuplicateEmailException("Customer with email " + request.getEmail() + " already exists");
+        if (!existingCustomer.getEmail().equals(request.email())) {
+            if (customerRepository.findByEmail(request.email()).isPresent()) {
+                logger.warn("Attempt to update customer with existing email: {}", request.email());
+                throw new DuplicateEmailException("Customer with email " + request.email() + " already exists");
             }
         }
 
-        existingCustomer.setFirstName(request.getFirstName());
-        existingCustomer.setLastName(request.getLastName());
-        existingCustomer.setEmail(request.getEmail());
-        existingCustomer.setPhone(request.getPhone());
-        if (request.getCustomerType() != null) {
-            existingCustomer.setCustomerType(request.getCustomerType());
+        existingCustomer.setFirstName(request.firstName());
+        existingCustomer.setLastName(request.lastName());
+        existingCustomer.setEmail(request.email());
+        existingCustomer.setPhone(request.phone());
+        if (request.customerType() != null) {
+            existingCustomer.setCustomerType(request.customerType());
         }
 
         Customer updatedCustomer = customerRepository.save(existingCustomer);

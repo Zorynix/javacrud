@@ -25,6 +25,8 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -39,7 +41,9 @@ import lombok.ToString;
     @Index(name = "idx_order_status_created", columnList = "status, created_at")
 })
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = {"customer", "orderItems"})
 public class Order {
@@ -60,19 +64,24 @@ public class Order {
     private Customer customer;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "PENDING";
 
     @NotNull(message = "Total amount is required")
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
+    @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
     @Column(name = "shipping_cost", precision = 8, scale = 2)
+    @Builder.Default
     private BigDecimal shippingCost = BigDecimal.ZERO;
 
     @Column(name = "tax_amount", precision = 8, scale = 2)
+    @Builder.Default
     private BigDecimal taxAmount = BigDecimal.ZERO;
 
     @Column(name = "discount_amount", precision = 8, scale = 2)
+    @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Column(name = "notes", length = 500)
@@ -98,11 +107,6 @@ public class Order {
 
     @Version
     private Long version;
-
-    public Order(String orderNumber, Customer customer) {
-        this.orderNumber = orderNumber;
-        this.customer = customer;
-    }
 
     public void calculateTotalAmount() {
         BigDecimal itemsTotal = orderItems != null ?

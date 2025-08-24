@@ -1,14 +1,14 @@
 package crudjava.crudjava.listener;
 
-import crudjava.crudjava.config.RabbitConfig;
-import crudjava.crudjava.dto.InventoryEventDto;
-import crudjava.crudjava.dto.OrderEventDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import crudjava.crudjava.config.RabbitConfig;
+import crudjava.crudjava.dto.OrderEventDto;
 
 @Component
 public class OrderEventListener {
@@ -21,38 +21,38 @@ public class OrderEventListener {
     @RabbitListener(queues = RabbitConfig.ORDER_CREATED_QUEUE)
     public void handleOrderCreated(OrderEventDto orderEvent) {
         logger.info("Processing order created event: Order {} for customer {}",
-                orderEvent.getOrderNumber(), orderEvent.getCustomerEmail());
+                orderEvent.orderNumber(), orderEvent.customerEmail());
 
         try {
             EmailNotificationDto emailNotification = new EmailNotificationDto(
-                orderEvent.getCustomerEmail(),
-                "Order Confirmation - " + orderEvent.getOrderNumber(),
-                "Your order " + orderEvent.getOrderNumber() + " has been created successfully. " +
-                "Total amount: $" + orderEvent.getTotalAmount(),
+                orderEvent.customerEmail(),
+                "Order Confirmation - " + orderEvent.orderNumber(),
+                "Your order " + orderEvent.orderNumber() + " has been created successfully. " +
+                "Total amount: $" + orderEvent.totalAmount(),
                 "ORDER_CREATED"
             );
 
             rabbitTemplate.convertAndSend(RabbitConfig.NOTIFICATION_EXCHANGE,
                     RabbitConfig.EMAIL_NOTIFICATION_ROUTING_KEY, emailNotification);
 
-            logger.info("Email notification sent for order: {}", orderEvent.getOrderNumber());
+            logger.info("Email notification sent for order: {}", orderEvent.orderNumber());
         } catch (Exception e) {
             logger.error("Failed to process order created event for order {}: {}",
-                    orderEvent.getOrderNumber(), e.getMessage());
+                    orderEvent.orderNumber(), e.getMessage());
         }
     }
 
     @RabbitListener(queues = RabbitConfig.ORDER_STATUS_CHANGED_QUEUE)
     public void handleOrderStatusChanged(OrderEventDto orderEvent) {
         logger.info("Processing order status change event: Order {} status changed to {}",
-                orderEvent.getOrderNumber(), orderEvent.getStatus());
+                orderEvent.orderNumber(), orderEvent.status());
 
         try {
-            String subject = "Order Update - " + orderEvent.getOrderNumber();
-            String message = "Your order " + orderEvent.getOrderNumber() +
-                    " status has been updated to: " + orderEvent.getStatus();
+            String subject = "Order Update - " + orderEvent.orderNumber();
+            String message = "Your order " + orderEvent.orderNumber() +
+                    " status has been updated to: " + orderEvent.status();
 
-            switch (orderEvent.getStatus()) {
+            switch (orderEvent.status()) {
                 case "SHIPPED":
                     message += ". Your order is on its way!";
                     break;
@@ -65,7 +65,7 @@ public class OrderEventListener {
             }
 
             EmailNotificationDto emailNotification = new EmailNotificationDto(
-                orderEvent.getCustomerEmail(),
+                orderEvent.customerEmail(),
                 subject,
                 message,
                 "ORDER_STATUS_CHANGED"
@@ -74,10 +74,10 @@ public class OrderEventListener {
             rabbitTemplate.convertAndSend(RabbitConfig.NOTIFICATION_EXCHANGE,
                     RabbitConfig.EMAIL_NOTIFICATION_ROUTING_KEY, emailNotification);
 
-            logger.info("Status change notification sent for order: {}", orderEvent.getOrderNumber());
+            logger.info("Status change notification sent for order: {}", orderEvent.orderNumber());
         } catch (Exception e) {
             logger.error("Failed to process order status change event for order {}: {}",
-                    orderEvent.getOrderNumber(), e.getMessage());
+                    orderEvent.orderNumber(), e.getMessage());
         }
     }
 

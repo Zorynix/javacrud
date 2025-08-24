@@ -2,15 +2,9 @@ package crudjava.crudjava.dto;
 
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreateOrderRequestDTO {
-    private Long customerId;
-    private String shippingAddress;
-    private List<OrderItemRequestDTO> orderItems;
+public record CreateOrderRequestDTO(
+    Long customerId,
+    String shippingAddress,
+    List<OrderItemRequestDTO> orderItems
+) {
 }

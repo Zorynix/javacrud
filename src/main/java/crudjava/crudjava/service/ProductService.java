@@ -20,40 +20,39 @@ import crudjava.crudjava.exception.ProductNotFoundException;
 import crudjava.crudjava.model.Product;
 import crudjava.crudjava.repository.ProductRepository;
 import crudjava.crudjava.util.UrlUtils;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class ProductService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository productRepository;
 
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
-
     @CacheEvict(value = "products", allEntries = true)
     public ProductDTO createProduct(CreateProductRequestDTO request) {
-        logger.info("Creating new product with SKU: {}", request.getSku());
+        logger.info("Creating new product with SKU: {}", request.sku());
         
-        String sku = request.getSku();
+        String sku = request.sku();
         if (sku == null || sku.isEmpty()) {
-            sku = generateSku(request.getCategory());
+            sku = generateSku(request.category());
         }
 
         if (productRepository.findBySku(sku).isPresent()) {
             throw new IllegalArgumentException("Product with SKU " + sku + " already exists");
         }
 
-        Product product = new Product();
-        product.setName(request.getName());
-        product.setDescription(request.getDescription());
-        product.setSku(sku);
-        product.setPrice(request.getPrice());
-        product.setCategory(request.getCategory());
-        product.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
-        product.setStockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
+        Product product = Product.builder()
+                .name(request.name())
+                .description(request.description())
+                .sku(sku)
+                .price(request.price())
+                .category(request.category())
+                .status(request.status() != null ? request.status() : "ACTIVE")
+                .stockQuantity(request.stockQuantity() != null ? request.stockQuantity() : 0)
+                .build();
 
         Product savedProduct = productRepository.save(product);
         logger.info("Successfully created product with ID: {}", savedProduct.getId());
@@ -68,19 +67,19 @@ public class ProductService {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found: " + id));
 
-        if (request.getSku() != null && !existingProduct.getSku().equals(request.getSku())) {
-            if (productRepository.findBySku(request.getSku()).isPresent()) {
-                throw new IllegalArgumentException("Product with SKU " + request.getSku() + " already exists");
+        if (request.sku() != null && !existingProduct.getSku().equals(request.sku())) {
+            if (productRepository.findBySku(request.sku()).isPresent()) {
+                throw new IllegalArgumentException("Product with SKU " + request.sku() + " already exists");
             }
-            existingProduct.setSku(request.getSku());
+            existingProduct.setSku(request.sku());
         }
 
-        if (request.getName() != null) existingProduct.setName(request.getName());
-        if (request.getDescription() != null) existingProduct.setDescription(request.getDescription());
-        if (request.getPrice() != null) existingProduct.setPrice(request.getPrice());
-        if (request.getCategory() != null) existingProduct.setCategory(request.getCategory());
-        if (request.getStatus() != null) existingProduct.setStatus(request.getStatus());
-        if (request.getStockQuantity() != null) existingProduct.setStockQuantity(request.getStockQuantity());
+        if (request.name() != null) existingProduct.setName(request.name());
+        if (request.description() != null) existingProduct.setDescription(request.description());
+        if (request.price() != null) existingProduct.setPrice(request.price());
+        if (request.category() != null) existingProduct.setCategory(request.category());
+        if (request.status() != null) existingProduct.setStatus(request.status());
+        if (request.stockQuantity() != null) existingProduct.setStockQuantity(request.stockQuantity());
 
         Product updatedProduct = productRepository.save(existingProduct);
         logger.info("Successfully updated product with ID: {}", id);

@@ -1,13 +1,14 @@
 package crudjava.crudjava.listener;
 
-import crudjava.crudjava.config.RabbitConfig;
-import crudjava.crudjava.dto.InventoryEventDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import crudjava.crudjava.config.RabbitConfig;
+import crudjava.crudjava.dto.InventoryEventDto;
 
 @Component
 public class InventoryEventListener {
@@ -20,50 +21,50 @@ public class InventoryEventListener {
     @RabbitListener(queues = RabbitConfig.INVENTORY_UPDATE_QUEUE)
     public void handleInventoryUpdate(InventoryEventDto inventoryEvent) {
         logger.info("Processing inventory update event: Product {} {} from {} to {}",
-                inventoryEvent.getSku(), inventoryEvent.getOperation(),
-                inventoryEvent.getOldQuantity(), inventoryEvent.getNewQuantity());
+                inventoryEvent.sku(), inventoryEvent.operation(),
+                inventoryEvent.oldQuantity(), inventoryEvent.newQuantity());
 
         try {
             logger.info("INVENTORY_CHANGE: Product={}, SKU={}, Operation={}, Old={}, New={}, Reason={}",
-                    inventoryEvent.getProductName(), inventoryEvent.getSku(),
-                    inventoryEvent.getOperation(), inventoryEvent.getOldQuantity(),
-                    inventoryEvent.getNewQuantity(), inventoryEvent.getReason());
+                    inventoryEvent.productName(), inventoryEvent.sku(),
+                    inventoryEvent.operation(), inventoryEvent.oldQuantity(),
+                    inventoryEvent.newQuantity(), inventoryEvent.reason());
 
 
         } catch (Exception e) {
             logger.error("Failed to process inventory update event for product {}: {}",
-                    inventoryEvent.getSku(), e.getMessage());
+                    inventoryEvent.sku(), e.getMessage());
         }
     }
 
     @RabbitListener(queues = RabbitConfig.LOW_STOCK_ALERT_QUEUE)
     public void handleLowStockAlert(InventoryEventDto inventoryEvent) {
         logger.warn("Processing low stock alert: Product {} has only {} units remaining",
-                inventoryEvent.getSku(), inventoryEvent.getNewQuantity());
+                inventoryEvent.sku(), inventoryEvent.newQuantity());
 
         try {
             ProcurementAlertDto procurementAlert = new ProcurementAlertDto(
-                inventoryEvent.getProductId(),
-                inventoryEvent.getProductName(),
-                inventoryEvent.getSku(),
-                inventoryEvent.getNewQuantity(),
+                inventoryEvent.productId(),
+                inventoryEvent.productName(),
+                inventoryEvent.sku(),
+                inventoryEvent.newQuantity(),
                 "LOW_STOCK_ALERT",
-                "Urgent: Product " + inventoryEvent.getProductName() +
-                " (" + inventoryEvent.getSku() + ") is running low. Only " +
-                inventoryEvent.getNewQuantity() + " units remaining."
+                "Urgent: Product " + inventoryEvent.productName() +
+                " (" + inventoryEvent.sku() + ") is running low. Only " +
+                inventoryEvent.newQuantity() + " units remaining."
             );
 
             logger.info("Low stock alert generated for product: {} ({})",
-                    inventoryEvent.getProductName(), inventoryEvent.getSku());
+                    inventoryEvent.productName(), inventoryEvent.sku());
 
-            if (inventoryEvent.getNewQuantity() <= 5) {
+            if (inventoryEvent.newQuantity() <= 5) {
                 logger.warn("CRITICAL: Product {} has reached critical stock level!",
-                        inventoryEvent.getSku());
+                        inventoryEvent.sku());
             }
 
         } catch (Exception e) {
             logger.error("Failed to process low stock alert for product {}: {}",
-                    inventoryEvent.getSku(), e.getMessage());
+                    inventoryEvent.sku(), e.getMessage());
         }
     }
 

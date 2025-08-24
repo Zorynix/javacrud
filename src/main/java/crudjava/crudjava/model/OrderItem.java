@@ -20,6 +20,8 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -32,7 +34,9 @@ import lombok.ToString;
     @Index(name = "idx_order_item_order_product", columnList = "order_id, product_id")
 })
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = {"order", "product"})
 public class OrderItem {
@@ -64,18 +68,11 @@ public class OrderItem {
     private BigDecimal unitPrice;
 
     @Column(name = "discount_amount", precision = 8, scale = 2)
+    @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
     @Column(name = "subtotal", nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
-
-    public OrderItem(Order order, Product product, Integer quantity, BigDecimal unitPrice) {
-        this.order = order;
-        this.product = product;
-        this.quantity = quantity;
-        this.unitPrice = unitPrice;
-        calculateSubtotal();
-    }
 
     public void calculateSubtotal() {
         BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(quantity));

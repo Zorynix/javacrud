@@ -24,6 +24,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -36,6 +37,7 @@ import lombok.ToString;
     @Index(name = "idx_customer_created_at", columnList = "created_at")
 })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -68,6 +70,7 @@ public class Customer {
     private String phone;
 
     @Column(name = "customer_type", nullable = false, length = 20)
+    @Builder.Default
     private String customerType = "REGULAR";
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -88,12 +91,4 @@ public class Customer {
 
     @Version
     private Long version;
-
-    public Customer(String firstName, String lastName, String email, String phone, String customerType) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phone = phone;
-        this.customerType = customerType;
-    }
 }

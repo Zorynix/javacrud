@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,7 @@ import lombok.ToString;
     @Index(name = "idx_address_country", columnList = "country")
 })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -59,19 +61,11 @@ public class Address {
     private String postalCode;
 
     @Column(name = "address_type", nullable = false, length = 20)
+    @Builder.Default
     private String addressType = "BILLING";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     @JsonBackReference("customer-addresses")
     private Customer customer;
-
-    public Address(String street, String city, String country, String postalCode, String addressType, Customer customer) {
-        this.street = street;
-        this.city = city;
-        this.country = country;
-        this.postalCode = postalCode;
-        this.addressType = addressType;
-        this.customer = customer;
-    }
 }

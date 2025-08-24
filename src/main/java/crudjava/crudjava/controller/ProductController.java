@@ -24,24 +24,21 @@ import crudjava.crudjava.dto.ProductDTO;
 import crudjava.crudjava.service.InventoryService;
 import crudjava.crudjava.service.ProductService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/products")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
     private final InventoryService inventoryService;
 
-    public ProductController(ProductService productService, InventoryService inventoryService) {
-        this.productService = productService;
-        this.inventoryService = inventoryService;
-    }
-
-    @PostMapping(consumes = "application/json", produces = "application/json")
+    @PostMapping
     public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody CreateProductRequestDTO request) {
         ProductDTO productDTO = productService.createProduct(request);
-        return new ResponseEntity<>(productDTO, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productDTO);
     }
 
     @GetMapping("/{id}")

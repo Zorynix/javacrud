@@ -23,28 +23,26 @@ import crudjava.crudjava.dto.CreateCustomerRequestDTO;
 import crudjava.crudjava.dto.CustomerDTO;
 import crudjava.crudjava.service.CustomerService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/customers")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerService customerService;
 
-    public CustomerController(CustomerService customerService) {
-        this.customerService = customerService;
-    }
-
-    @PostMapping(consumes = "application/json", produces = "application/json")
+    @PostMapping
     public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CreateCustomerRequestDTO request) {
         CustomerDTO customerDTO = customerService.createCustomer(request);
-        return new ResponseEntity<>(customerDTO, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(customerDTO);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDTO> getCustomer(@PathVariable Long id) {
         return customerService.findById(id)
-                .map(customerDTO -> ResponseEntity.ok(customerDTO))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -111,7 +109,7 @@ public class CustomerController {
         return ResponseEntity.ok(count);
     }
 
-    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    @PutMapping("/{id}")
     public ResponseEntity<CustomerDTO> updateCustomer(
             @PathVariable Long id, @Valid @RequestBody CreateCustomerRequestDTO request) {
         CustomerDTO customerDTO = customerService.updateCustomer(id, request);

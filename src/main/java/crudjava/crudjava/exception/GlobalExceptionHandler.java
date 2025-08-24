@@ -22,73 +22,37 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomerNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCustomerNotFound(CustomerNotFoundException ex) {
         logger.warn("Customer not found: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Клиент не найден",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return createErrorResponse(HttpStatus.NOT_FOUND, "Клиент не найден", ex.getMessage());
     }
 
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException ex) {
         logger.warn("Product not found: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Товар не найден",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return createErrorResponse(HttpStatus.NOT_FOUND, "Товар не найден", ex.getMessage());
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleOrderNotFound(OrderNotFoundException ex) {
         logger.warn("Order not found: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "Заказ не найден",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return createErrorResponse(HttpStatus.NOT_FOUND, "Заказ не найден", ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex) {
         logger.warn("Duplicate email attempt: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.CONFLICT.value(),
-                "Email уже используется",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return createErrorResponse(HttpStatus.CONFLICT, "Email уже используется", ex.getMessage());
     }
 
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException ex) {
         logger.warn("Insufficient stock: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Недостаточно товара на складе",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Недостаточно товара на складе", ex.getMessage());
     }
 
     @ExceptionHandler(CustomerHasOrdersException.class)
     public ResponseEntity<ErrorResponse> handleCustomerHasOrders(CustomerHasOrdersException ex) {
         logger.warn("Cannot delete customer with orders: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.CONFLICT.value(),
-                "Невозможно удалить клиента с заказами",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return createErrorResponse(HttpStatus.CONFLICT, "Невозможно удалить клиента с заказами", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -114,36 +78,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         logger.warn("Type mismatch error: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Неверный тип параметра",
-                "Параметр '" + ex.getName() + "' имеет неверный формат",
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Неверный тип параметра", 
+                "Параметр '" + ex.getName() + "' имеет неверный формат");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         logger.warn("Illegal argument: {}", ex.getMessage());
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Неверные данные запроса",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Неверные данные запроса", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         logger.error("Unexpected error occurred", ex);
+        return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера", 
+                "Произошла непредвиденная ошибка. Пожалуйста, обратитесь в службу поддержки");
+    }
+
+    private ResponseEntity<ErrorResponse> createErrorResponse(HttpStatus status, String title, String message) {
         ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Внутренняя ошибка сервера",
-                "Произошла непредвиденная ошибка. Пожалуйста, обратитесь в службу поддержки",
+                status.value(),
+                title,
+                message,
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        return ResponseEntity.status(status).body(error);
     }
 }

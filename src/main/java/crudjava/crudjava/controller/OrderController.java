@@ -23,22 +23,20 @@ import crudjava.crudjava.dto.CreateOrderRequestDTO;
 import crudjava.crudjava.dto.OrderDTO;
 import crudjava.crudjava.service.OrderService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/orders")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
 
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
-
-    @PostMapping(consumes = "application/json", produces = "application/json")
+    @PostMapping
     public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequestDTO request) {
         OrderDTO orderDTO = orderService.createOrder(request);
-        return new ResponseEntity<>(orderDTO, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderDTO);
     }
 
     @GetMapping

@@ -33,9 +33,11 @@ import crudjava.crudjava.repository.OrderRepository;
 import crudjava.crudjava.repository.ProductRepository;
 import crudjava.crudjava.util.UrlUtils;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
@@ -46,60 +48,71 @@ public class OrderService {
     private final RabbitTemplate rabbitTemplate;
     private final InventoryService inventoryService;
 
-    public OrderService(OrderRepository orderRepository, CustomerRepository customerRepository,
-                       ProductRepository productRepository, RabbitTemplate rabbitTemplate,
-                       InventoryService inventoryService) {
-        this.orderRepository = orderRepository;
-        this.customerRepository = customerRepository;
-        this.productRepository = productRepository;
-        this.rabbitTemplate = rabbitTemplate;
-        this.inventoryService = inventoryService;
-    }
-
-    @CircuitBreaker(name = "orderService", fallbackMethod = "createOrderFallback")
+        @CircuitBreaker(name = "orderService", fallbackMethod = "fallbackCreateOrder")
     public OrderDTO createOrder(CreateOrderRequestDTO request) {
-        logger.info("Creating new order for customer ID: {}", request.getCustomerId());
+        logger.info("Creating new order for customer ID: {}", request.customerId());
         
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new CustomerNotFoundException("Customer not found: " + request.getCustomerId()));
-
-        String orderNumber = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-        Order order = new Order(orderNumber, customer);
-        order = orderRepository.save(order);
-
-        order.setOrderItems(new ArrayList<>());
-
-        for (OrderItemRequestDTO itemRequest : request.getOrderItems()) {
-            Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new ProductNotFoundException("Product not found: " + itemRequest.getProductId()));
-
-            if (product.getStockQuantity() < itemRequest.getQuantity()) {
+        Customer customer = customerRepository.findById(request.customerId())
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found: " + request.customerId()));
+        
+        String orderNumber = "ORDER-" + UUID.randomUUID().toString().substring(0, 8);
+        
+        Order order = Order.builder()
+                .orderNumber(orderNumber)
+                .customer(customer)
+                .build();
+        
+        List<OrderItem> orderItems = new ArrayList<>();
+        
+        for (OrderItemRequestDTO itemRequest : request.orderItems()) {
+            Product product = productRepository.findById(itemRequest.productId())
+                    .orElseThrow(() -> new ProductNotFoundException("Product not found: " + itemRequest.productId()));
+            
+            if (product.getStockQuantity() < itemRequest.quantity()) {
                 throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
             }
-
-            OrderItem orderItem = new OrderItem(order, product, itemRequest.getQuantity(), product.getPrice());
-            if (itemRequest.getDiscountAmount() != null) {
-                orderItem.setDiscountAmount(itemRequest.getDiscountAmount());
-            }
-
-            order.getOrderItems().add(orderItem);
-
-            inventoryService.reserveInventory(product.getId(), itemRequest.getQuantity(),
-                    "Order reservation: " + orderNumber);
+            
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(product)
+                    .quantity(itemRequest.quantity())
+                    .unitPrice(product.getPrice())
+                    .discountAmount(itemRequest.discountAmount())
+                    .build();
+            orderItem.calculateSubtotal();
+            orderItems.add(orderItem);
+            
+            inventoryService.reserveInventory(product.getId(), itemRequest.quantity(),
+                    "Order: " + orderNumber);
         }
-
+        
+        order.setOrderItems(orderItems);
         order.calculateTotalAmount();
-        order = orderRepository.save(order);
-
-        publishOrderEvent(order, "ORDER_CREATED");
-
-        logger.info("Successfully created order with ID: {} and number: {}", order.getId(), order.getOrderNumber());
-        return new OrderDTO(order);
+        
+        try {
+            Order savedOrder = orderRepository.save(order);
+            logger.info("Successfully created order with ID: {}", savedOrder.getId());
+            
+            OrderEventDto orderEvent = new OrderEventDto(
+                    savedOrder.getId(), 
+                    savedOrder.getOrderNumber(),
+                    savedOrder.getCustomer().getId(),
+                    savedOrder.getCustomer().getEmail(),
+                    "CREATED",
+                    savedOrder.getTotalAmount(),
+                    LocalDateTime.now()
+            );
+            rabbitTemplate.convertAndSend(RabbitConfig.ORDER_EXCHANGE, RabbitConfig.ORDER_CREATED_ROUTING_KEY, orderEvent);
+            
+            return new OrderDTO(savedOrder);
+        } catch (Exception ex) {
+            logger.error("Order creation failed for customer {}: {}", request.customerId(), ex.getMessage());
+            throw new RuntimeException("Failed to create order", ex);
+        }
     }
 
     public OrderDTO createOrderFallback(CreateOrderRequestDTO request, Exception ex) {
-        logger.error("Order creation failed for customer {}: {}", request.getCustomerId(), ex.getMessage());
+        logger.error("Order creation failed for customer {}: {}", request.customerId(), ex.getMessage());
         throw new RuntimeException("Order service temporarily unavailable. Please try again later.");
     }
 

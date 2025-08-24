@@ -26,6 +26,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -40,6 +41,7 @@ import lombok.ToString;
     @Index(name = "idx_product_name_category", columnList = "name, category")
 })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -72,6 +74,7 @@ public class Product {
 
     @NotNull(message = "Stock quantity is required")
     @Column(name = "stock_quantity", nullable = false)
+    @Builder.Default
     private Integer stockQuantity = 0;
 
     @Column(name = "sku", unique = true, length = 50)
@@ -82,6 +85,7 @@ public class Product {
     private BigDecimal weightKg;
 
     @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
     private String status = "ACTIVE";
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -98,13 +102,4 @@ public class Product {
 
     @Version
     private Long version;
-
-    public Product(String name, String description, BigDecimal price, String category, Integer stockQuantity, String sku) {
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.category = category;
-        this.stockQuantity = stockQuantity;
-        this.sku = sku;
-    }
 }
