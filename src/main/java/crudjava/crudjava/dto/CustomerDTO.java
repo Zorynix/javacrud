@@ -2,35 +2,25 @@ package crudjava.crudjava.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import crudjava.crudjava.model.Customer;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CustomerDTO {
 
-public record CustomerDTO(
-    Long id,
-    String firstName,
-    String lastName,
-    String email,
-    String phone,
-    String customerType,
-    List<AddressDTO> addresses,
-    Long version,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt
-) {
-    public CustomerDTO(Customer customer) {
-        this(
-            customer.getId(),
-            customer.getFirstName(),
-            customer.getLastName(),
-            customer.getEmail(),
-            customer.getPhone(),
-            customer.getCustomerType(),
-            customer.getAddresses() != null 
-                ? customer.getAddresses().stream().map(AddressDTO::new).toList()
-                : null,
-            customer.getVersion(),
-            customer.getCreatedAt(),
-            customer.getUpdatedAt()
-        );
-    }
+    private Long id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private String customerType;
+    private List<AddressDTO> addresses;
+    private Long version;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

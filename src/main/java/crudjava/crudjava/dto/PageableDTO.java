@@ -1,29 +1,24 @@
 package crudjava.crudjava.dto;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record PageableDTO<T>(
-    List<T> content,
-    int pageNumber,
-    int pageSize,
-    long totalElements,
-    int totalPages,
-    boolean first,
-    boolean last,
-    boolean hasNext,
-    boolean hasPrevious
-) {
-    public PageableDTO(List<T> content, int pageNumber, int pageSize, long totalElements) {
-        this(
-            content,
-            pageNumber,
-            pageSize,
-            totalElements,
-            (int) Math.ceil((double) totalElements / pageSize),
-            pageNumber == 0,
-            pageNumber >= (int) Math.ceil((double) totalElements / pageSize) - 1,
-            pageNumber < (int) Math.ceil((double) totalElements / pageSize) - 1,
-            pageNumber > 0
-        );
-    }
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PageableDTO<T> {
+
+    private List<T> content;
+    private int pageNumber;
+    private int pageSize;
+    private long totalElements;
+    private int totalPages;
+    private boolean first;
+    private boolean last;
+    private boolean hasNext;
+    private boolean hasPrevious;
 }

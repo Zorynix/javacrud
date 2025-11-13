@@ -3,58 +3,40 @@ package crudjava.crudjava.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import crudjava.crudjava.model.Order;
-import crudjava.crudjava.model.OrderItem;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderDTO {
 
-public record OrderDTO(
-    Long id,
-    String orderNumber,
-    Long customerId,
-    String customerName,
-    BigDecimal totalAmount,
-    String status,
-    LocalDateTime orderDate,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    List<OrderItemDTO> items
-) {
-    public OrderDTO(Order order) {
-        this(
-            order.getId(),
-            order.getOrderNumber(),
-            order.getCustomer().getId(),
-            order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName(),
-            order.getTotalAmount(),
-            order.getStatus(),
-            order.getCreatedAt(),
-            order.getCreatedAt(),
-            order.getUpdatedAt(),
-            order.getOrderItems() != null
-                ? order.getOrderItems().stream().map(OrderItemDTO::new).toList()
-                : null
-        );
-    }
+    private Long id;
+    private String orderNumber;
+    private Long customerId;
+    private String customerName;
+    private BigDecimal totalAmount;
+    private String status;
+    private LocalDateTime orderDate;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<OrderItemDTO> items;
 
-    public record OrderItemDTO(
-        Long id,
-        Long productId,
-        String productName,
-        String productSku,
-        Integer quantity,
-        BigDecimal unitPrice,
-        BigDecimal totalPrice
-    ) {
-        public OrderItemDTO(OrderItem item) {
-            this(
-                item.getId(),
-                item.getProduct().getId(),
-                item.getProduct().getName(),
-                item.getProduct().getSku(),
-                item.getQuantity(),
-                item.getUnitPrice(),
-                item.getTotalPrice()
-            );
-        }
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OrderItemDTO {
+
+        private Long id;
+        private Long productId;
+        private String productName;
+        private String productSku;
+        private Integer quantity;
+        private BigDecimal unitPrice;
+        private BigDecimal totalPrice;
     }
 }

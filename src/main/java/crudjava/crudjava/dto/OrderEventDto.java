@@ -2,14 +2,22 @@ package crudjava.crudjava.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record OrderEventDto(
-    Long orderId,
-    String orderNumber,
-    Long customerId,
-    String customerEmail,
-    String status,
-    BigDecimal totalAmount,
-    LocalDateTime eventTime
-) {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderEventDto {
+
+    private Long orderId;
+    private String orderNumber;
+    private Long customerId;
+    private String customerEmail;
+    private String status;
+    private BigDecimal totalAmount;
+    private LocalDateTime eventTime;
 }

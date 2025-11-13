@@ -2,37 +2,27 @@ package crudjava.crudjava.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import crudjava.crudjava.model.Product;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductDTO {
 
-public record ProductDTO(
-    Long id,
-    String name,
-    String description,
-    BigDecimal price,
-    String category,
-    Integer stockQuantity,
-    String sku,
-    BigDecimal weightKg,
-    String status,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    Long version
-) {
-    public ProductDTO(Product product) {
-        this(
-            product.getId(),
-            product.getName(),
-            product.getDescription(),
-            product.getPrice(),
-            product.getCategory(),
-            product.getStockQuantity(),
-            product.getSku(),
-            product.getWeightKg(),
-            product.getStatus(),
-            product.getCreatedAt(),
-            product.getUpdatedAt(),
-            product.getVersion()
-        );
-    }
+    private Long id;
+    private String name;
+    private String description;
+    private BigDecimal price;
+    private String category;
+    private Integer stockQuantity;
+    private String sku;
+    private BigDecimal weightKg;
+    private String status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Long version;
 }

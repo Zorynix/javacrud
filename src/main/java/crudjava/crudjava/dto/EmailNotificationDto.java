@@ -9,12 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddressDTO {
+public class EmailNotificationDto {
 
-    private Long id;
-    private String street;
-    private String city;
-    private String country;
-    private String postalCode;
-    private String addressType;
+    private String recipientEmail;
+    private String subject;
+    private String message;
+    private String eventType;
 }

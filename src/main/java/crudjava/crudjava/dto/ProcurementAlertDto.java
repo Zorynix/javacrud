@@ -1,6 +1,5 @@
 package crudjava.crudjava.dto;
 
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,14 +9,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class InventoryEventDto {
+public class ProcurementAlertDto {
 
     private Long productId;
     private String productName;
     private String sku;
-    private Integer oldQuantity;
-    private Integer newQuantity;
-    private String operation;
-    private String reason;
-    private LocalDateTime eventTime;
+    private Integer currentStock;
+    private String alertType;
+    private String message;
 }
